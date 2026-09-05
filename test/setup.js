@@ -1,14 +1,19 @@
-import { beforeEach, vi } from "vitest";
+import { beforeEach } from "vitest";
+import { vi } from "vitest";
 import { navigation } from "../src/navigation.js";
-import { clearScheduledRefresh } from "../src/refresh.js";
-import { clearSession } from "../src/store.js";
+import { resetLoginRedirect } from "../src/interceptor.js";
+import { abandonRefreshes } from "../src/refresh.js";
+import { resetSession } from "../src/store.js";
+import { resetBootstrapForTests } from "../src/plugin.js";
 
 navigation.currentPath = vi.fn(() => "/here");
 navigation.assign = vi.fn();
 
 beforeEach(() => {
-  clearSession();
-  clearScheduledRefresh();
+  resetSession();
+  abandonRefreshes();
+  resetLoginRedirect();
+  resetBootstrapForTests();
   navigation.assign.mockClear();
   navigation.currentPath.mockClear();
 });

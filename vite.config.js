@@ -3,10 +3,11 @@ import { resolve } from "path";
 
 export default defineConfig({
   build: {
+    sourcemap: true,
     lib: {
       entry: resolve(import.meta.dirname, "src/index.js"),
-      name: "ui-auth",
-      fileName: (format) => `ui-auth.${format}.js`,
+      name: "TrevorismUiAuth",
+      fileName: (format) => (format === "umd" ? "ui-auth.umd.cjs" : "ui-auth.es.js"),
     },
     rollupOptions: {
       external: ["vue", "vue-router", "axios"],

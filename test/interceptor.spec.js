@@ -4,7 +4,15 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installOn, isProtectedApiUrl } from "../src/interceptor.js";
 import { navigation } from "../src/navigation.js";
 import { setClient } from "../src/refresh.js";
-import { isAuthenticated } from "../src/store.js";
+import { applySession, isAuthenticated } from "../src/store.js";
+
+function reply401Once(seen, config) {
+  if (seen.has(config.url)) {
+    return [200, { ok: true }];
+  }
+  seen.add(config.url);
+  return [401];
+}
 
 const SESSION_BODY = {
   authenticated: true,
@@ -47,16 +55,19 @@ describe("interceptor", () => {
 
   it("only refreshes once for concurrent failures", async () => {
     let refreshes = 0;
-    let reportAttempts = 0;
-    mock.onGet("/api/one").reply(() => (reportAttempts++ < 1 ? [401] : [200, {}]));
-    mock.onGet("/api/two").reply(() => [200, {}]);
+    const seen = new Set();
+    mock.onGet("/api/one").reply((config) => reply401Once(seen, config));
+    mock.onGet("/api/two").reply((config) => reply401Once(seen, config));
     mock.onPost("/api/auth/refresh").reply(() => {
       refreshes += 1;
       return [200, SESSION_BODY];
     });
 
-    await Promise.all([client.get("/api/one").catch(() => {}), client.get("/api/one").catch(() => {})]);
+    const [one, two] = await Promise.all([client.get("/api/one"), client.get("/api/two")]);
 
+    expect(one.status).toBe(200);
+    expect(two.status).toBe(200);
+    expect(seen.size).toBe(2);
     expect(refreshes).toBe(1);
   });
 
@@ -72,7 +83,8 @@ describe("interceptor", () => {
     expect(attempts).toBe(2);
   });
 
-  it("signs the user out and redirects to login when the refresh fails", async () => {
+  it("signs the user out and redirects to login when a live session cannot be refreshed", async () => {
+    applySession(SESSION_BODY);
     mock.onGet("/api/report").reply(401);
     mock.onPost("/api/auth/refresh").reply(401);
 
@@ -80,6 +92,59 @@ describe("interceptor", () => {
 
     expect(isAuthenticated.value).toBe(false);
     expect(navigation.assign).toHaveBeenCalledWith("/api/auth/login?next=%2Fhere");
+  });
+
+  it("does not redirect a visitor who was never signed in", async () => {
+    mock.onGet("/api/report").reply(401);
+    mock.onPost("/api/auth/refresh").reply(401);
+
+    await expect(client.get("/api/report")).rejects.toBeDefined();
+
+    expect(navigation.assign).not.toHaveBeenCalled();
+  });
+
+  it("redirects to login at most once per page load", async () => {
+    applySession(SESSION_BODY);
+    mock.onGet("/api/one").reply(401);
+    mock.onGet("/api/two").reply(401);
+    mock.onPost("/api/auth/refresh").reply(401);
+
+    await expect(client.get("/api/one")).rejects.toBeDefined();
+    applySession(SESSION_BODY);
+    await expect(client.get("/api/two")).rejects.toBeDefined();
+
+    expect(navigation.assign).toHaveBeenCalledTimes(1);
+  });
+
+  it("guards every baseURL shape axios can produce", async () => {
+    const shapes = [
+      { baseURL: "/api", url: "/report" },
+      { baseURL: "/api", url: "report" },
+      { baseURL: "/api/", url: "/report" },
+      { baseURL: "/api/", url: "report" },
+      { baseURL: undefined, url: "/api/report" },
+    ];
+
+    for (const shape of shapes) {
+      expect(isProtectedApiUrl(shape), JSON.stringify(shape)).toBe(true);
+    }
+  });
+
+  it("refreshes and replays a request made through a baseURL instance", async () => {
+    applySession(SESSION_BODY);
+    const scoped = axios.create({ baseURL: "/api" });
+    const scopedMock = new MockAdapter(scoped);
+    installOn(scoped);
+    setClient(scoped);
+    let attempts = 0;
+    scopedMock.onGet("/report").reply(() => (attempts++ === 0 ? [401] : [200, { ok: true }]));
+    scopedMock.onPost("/api/auth/refresh").reply(200, SESSION_BODY);
+
+    const response = await scoped.get("/report");
+
+    expect(response.data).toEqual({ ok: true });
+    expect(attempts).toBe(2);
+    scopedMock.restore();
   });
 
   it("ignores a 401 from the auth routes themselves", async () => {

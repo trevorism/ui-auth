@@ -52,6 +52,11 @@ export function clearSession() {
   state.loading = false;
 }
 
+export function resetSession() {
+  Object.assign(state, EMPTY_SESSION);
+  state.loading = true;
+}
+
 export function expiresAt() {
   return state.expiresAt;
 }

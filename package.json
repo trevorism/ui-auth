@@ -5,23 +5,26 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "lint": "eslint . --fix",
+    "lint": "eslint .",
     "accept": "vitest run --environment jsdom",
-    "format": "prettier --write ./*.js",
+    "format": "prettier --write \"{src,test}/**/*.js\" ./*.js",
     "test": "vitest --environment jsdom",
+    "prepublishOnly": "npm run build && npm run accept",
     "webstorm-integration": "vitest --watch --reporter=dot --reporter=json --outputFile=.vitest-result.json"
   },
-  "main": "./dist/ui-auth.umd.js",
+  "main": "./dist/ui-auth.umd.cjs",
   "module": "./dist/ui-auth.es.js",
   "exports": {
     ".": {
       "import": "./dist/ui-auth.es.js",
-      "require": "./dist/ui-auth.umd.js"
+      "require": "./dist/ui-auth.umd.cjs"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -38,8 +41,8 @@
   },
   "peerDependencies": {
     "axios": ">=1",
-    "vue": "^3.5.18",
-    "vue-router": "^5.0.0"
+    "vue": "^3.3.0",
+    "vue-router": ">=4"
   },
   "peerDependenciesMeta": {
     "vue-router": {
@@ -50,5 +53,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trevorism/ui-auth.git"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
