@@ -19,7 +19,7 @@ export const TrevorismAuth = {
     bindVisibility();
     if (options.router && !guardRegistered) {
       guardRegistered = true;
-      options.router.beforeEach(createAuthGuard());
+      options.router.beforeEach(createAuthGuard(client));
     }
     if (app?.config?.globalProperties) {
       app.config.globalProperties.$auth = useAuth();
@@ -45,12 +45,12 @@ export async function bootstrap(client = axios) {
   markReady();
 }
 
-export function createAuthGuard() {
+export function createAuthGuard(client) {
   return async (to) => {
     if (!to?.meta?.requiresAuth) {
       return true;
     }
-    await ensureBootstrapped();
+    await ensureBootstrapped(client);
     await ready;
     if (isAuthenticated.value) {
       return true;

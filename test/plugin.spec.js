@@ -102,11 +102,23 @@ describe("plugin", () => {
     expect(navigation.assign).toHaveBeenCalledWith("/api/auth/login?next=%2Freport%3Ftab%3D1");
   });
 
-  it("bootstraps by itself when the guard runs before install finishes", async () => {
+  it("bootstraps against the given client when the guard runs before install", async () => {
     mock.onGet("/api/auth/session").reply(200, SESSION_BODY);
+    const guard = createAuthGuard(client);
+
+    await expect(guard({ fullPath: "/report", meta: { requiresAuth: true } })).resolves.toBe(true);
+    expect(isAuthenticated.value).toBe(true);
+    expect(navigation.assign).not.toHaveBeenCalled();
+  });
+
+  it("bootstraps a standalone guard against the global client by default", async () => {
+    const globalMock = new MockAdapter(axios);
+    globalMock.onGet("/api/auth/session").reply(200, SESSION_BODY);
     const guard = createAuthGuard();
 
-    await expect(guard({ fullPath: "/report", meta: { requiresAuth: true } }, client)).resolves.toBeDefined();
+    await expect(guard({ fullPath: "/report", meta: { requiresAuth: true } })).resolves.toBe(true);
+
+    globalMock.restore();
   });
 
   it("redirects a guarded route at most once per page load", async () => {
