@@ -1,14 +1,18 @@
 import axios from "axios";
 import { login } from "./redirect.js";
-import { refreshSession } from "./refresh.js";
+import { refreshSession, setClient } from "./refresh.js";
+import { isAuthenticated } from "./store.js";
 
 const INSTALLED = Symbol.for("trevorism.ui-auth.interceptor");
+
+let loginRedirected = false;
 
 export function installOn(instance = axios) {
   if (instance[INSTALLED]) {
     return instance;
   }
   instance[INSTALLED] = true;
+  setClient(instance);
   instance.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -16,17 +20,33 @@ export function installOn(instance = axios) {
       if (!shouldReplay(error, config)) {
         return Promise.reject(error);
       }
+      const wasAuthenticated = isAuthenticated.value;
       config._retried = true;
       try {
         await refreshSession();
       } catch {
-        login();
+        if (wasAuthenticated) {
+          redirectToLoginOnce();
+        }
         return Promise.reject(error);
       }
       return instance(config);
     },
   );
   return instance;
+}
+
+export function redirectToLoginOnce(next) {
+  if (loginRedirected) {
+    return false;
+  }
+  loginRedirected = true;
+  login(next);
+  return true;
+}
+
+export function resetLoginRedirect() {
+  loginRedirected = false;
 }
 
 function shouldReplay(error, config) {
@@ -42,8 +62,7 @@ function shouldReplay(error, config) {
 export function isProtectedApiUrl(config) {
   try {
     const origin = window.location.origin;
-    const base = new URL(config.baseURL ?? "", origin);
-    const resolved = new URL(config.url ?? "", base);
+    const resolved = new URL(fullPath(config), origin);
     if (resolved.origin !== origin) {
       return false;
     }
@@ -51,4 +70,13 @@ export function isProtectedApiUrl(config) {
   } catch {
     return false;
   }
+}
+
+function fullPath(config) {
+  const url = config.url ?? "";
+  const baseURL = config.baseURL;
+  if (!baseURL || /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url)) {
+    return url;
+  }
+  return `${baseURL.replace(/\/+$/, "")}/${url.replace(/^\/+/, "")}`;
 }

@@ -5,17 +5,19 @@ export const REFRESH_URL = "/api/auth/refresh";
 export const LOGOUT_URL = "/api/auth/logout";
 export const LOGIN_URL = "/api/auth/login";
 
+const OWN_ORIGIN = { baseURL: "" };
+
 export async function fetchSession(client = axios) {
-  const response = await client.get(SESSION_URL);
+  const response = await client.get(SESSION_URL, OWN_ORIGIN);
   return response.data;
 }
 
 export async function postRefresh(client = axios) {
-  const response = await client.post(REFRESH_URL);
+  const response = await client.post(REFRESH_URL, null, OWN_ORIGIN);
   return response.data;
 }
 
 export async function postLogout(client = axios) {
-  const response = await client.post(LOGOUT_URL);
+  const response = await client.post(LOGOUT_URL, null, OWN_ORIGIN);
   return response.data;
 }

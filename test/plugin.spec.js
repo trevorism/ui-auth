@@ -2,7 +2,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { navigation } from "../src/navigation.js";
-import { TrevorismAuth, bootstrap, createAuthGuard } from "../src/plugin.js";
+import { TrevorismAuth, bootstrap, createAuthGuard, ensureBootstrapped } from "../src/plugin.js";
 import { clearScheduledRefresh, setClient } from "../src/refresh.js";
 import { applySession, isAuthenticated } from "../src/store.js";
 import { login, logout } from "../src/redirect.js";
@@ -86,17 +86,50 @@ describe("plugin", () => {
   });
 
   it("lets a signed in user through a guarded route", async () => {
-    applySession(SESSION_BODY);
+    mock.onGet("/api/auth/session").reply(200, SESSION_BODY);
+    await ensureBootstrapped(client);
     const guard = createAuthGuard();
 
     await expect(guard({ fullPath: "/report", meta: { requiresAuth: true } })).resolves.toBe(true);
   });
 
   it("sends a signed out user to login with the requested route", async () => {
+    mock.onGet("/api/auth/session").reply(200, { authenticated: false });
+    await ensureBootstrapped(client);
     const guard = createAuthGuard();
 
     await expect(guard({ fullPath: "/report?tab=1", meta: { requiresAuth: true } })).resolves.toBe(false);
     expect(navigation.assign).toHaveBeenCalledWith("/api/auth/login?next=%2Freport%3Ftab%3D1");
+  });
+
+  it("bootstraps against the given client when the guard runs before install", async () => {
+    mock.onGet("/api/auth/session").reply(200, SESSION_BODY);
+    const guard = createAuthGuard(client);
+
+    await expect(guard({ fullPath: "/report", meta: { requiresAuth: true } })).resolves.toBe(true);
+    expect(isAuthenticated.value).toBe(true);
+    expect(navigation.assign).not.toHaveBeenCalled();
+  });
+
+  it("bootstraps a standalone guard against the global client by default", async () => {
+    const globalMock = new MockAdapter(axios);
+    globalMock.onGet("/api/auth/session").reply(200, SESSION_BODY);
+    const guard = createAuthGuard();
+
+    await expect(guard({ fullPath: "/report", meta: { requiresAuth: true } })).resolves.toBe(true);
+
+    globalMock.restore();
+  });
+
+  it("redirects a guarded route at most once per page load", async () => {
+    mock.onGet("/api/auth/session").reply(200, { authenticated: false });
+    await ensureBootstrapped(client);
+    const guard = createAuthGuard();
+
+    await guard({ fullPath: "/a", meta: { requiresAuth: true } });
+    await guard({ fullPath: "/b", meta: { requiresAuth: true } });
+
+    expect(navigation.assign).toHaveBeenCalledTimes(1);
   });
 });
 

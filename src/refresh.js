@@ -9,6 +9,7 @@ let client = axios;
 let inFlight = null;
 let timerId = null;
 let visibilityBound = false;
+let epoch = 0;
 
 export function setClient(instance) {
   client = instance ?? axios;
@@ -16,15 +17,20 @@ export function setClient(instance) {
 
 export function refreshSession() {
   if (!inFlight) {
+    const startedAt = epoch;
     inFlight = postRefresh(client)
       .then((body) => {
-        applySession(body);
-        scheduleRefresh();
+        if (startedAt === epoch) {
+          applySession(body);
+          scheduleRefresh();
+        }
         return body;
       })
       .catch((error) => {
-        clearSession();
-        clearScheduledRefresh();
+        if (startedAt === epoch) {
+          clearSession();
+          clearScheduledRefresh();
+        }
         throw error;
       })
       .finally(() => {
@@ -32,6 +38,12 @@ export function refreshSession() {
       });
   }
   return inFlight;
+}
+
+export function abandonRefreshes() {
+  epoch += 1;
+  inFlight = null;
+  clearScheduledRefresh();
 }
 
 export function scheduleRefresh() {

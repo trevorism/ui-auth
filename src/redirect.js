@@ -1,5 +1,5 @@
 import { navigation } from "./navigation.js";
-import { clearScheduledRefresh } from "./refresh.js";
+import { abandonRefreshes } from "./refresh.js";
 import { LOGIN_URL, postLogout } from "./session.js";
 import { clearSession } from "./store.js";
 
@@ -9,8 +9,8 @@ export function login(next = navigation.currentPath()) {
 
 export async function logout() {
   const logoutUrl = await resolveLogoutUrl();
+  abandonRefreshes();
   clearSession();
-  clearScheduledRefresh();
   navigation.assign(logoutUrl ?? "/");
 }
 
