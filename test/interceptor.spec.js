@@ -3,7 +3,7 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installOn, isProtectedApiUrl } from "../src/interceptor.js";
 import { navigation } from "../src/navigation.js";
-import { setClient } from "../src/refresh.js";
+import { setClient } from "../src/client.js";
 import { applySession, isAuthenticated } from "../src/store.js";
 
 function reply401Once(seen, config) {

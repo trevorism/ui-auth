@@ -3,7 +3,8 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { navigation } from "../src/navigation.js";
 import { TrevorismAuth, bootstrap, createAuthGuard, ensureBootstrapped } from "../src/plugin.js";
-import { clearScheduledRefresh, setClient } from "../src/refresh.js";
+import { setClient } from "../src/client.js";
+import { clearScheduledRefresh } from "../src/refresh.js";
 import { applySession, isAuthenticated } from "../src/store.js";
 import { login, logout } from "../src/redirect.js";
 import { useAuth } from "../src/useAuth.js";
@@ -164,6 +165,34 @@ describe("login and logout", () => {
 
     expect(isAuthenticated.value).toBe(false);
     expect(navigation.assign).toHaveBeenCalledWith("https://login.auth.trevorism.com/api/logout");
+  });
+
+  it("logs out through the configured client rather than the global one", async () => {
+    const scoped = axios.create();
+    const scopedMock = new MockAdapter(scoped);
+    const globalMock = new MockAdapter(axios);
+    let scopedCalls = 0;
+    let globalCalls = 0;
+    scopedMock.onPost("/api/auth/logout").reply(() => {
+      scopedCalls += 1;
+      return [200, { logoutUrl: "https://login.auth.trevorism.com/api/logout" }];
+    });
+    globalMock.onPost("/api/auth/logout").reply(() => {
+      globalCalls += 1;
+      return [200, { logoutUrl: "https://wrong.example.org" }];
+    });
+    setClient(scoped);
+    applySession(SESSION_BODY);
+
+    await logout();
+
+    expect(scopedCalls).toBe(1);
+    expect(globalCalls).toBe(0);
+    expect(navigation.assign).toHaveBeenCalledWith("https://login.auth.trevorism.com/api/logout");
+
+    setClient(axios);
+    scopedMock.restore();
+    globalMock.restore();
   });
 
   it("still signs the user out when the logout call fails", async () => {

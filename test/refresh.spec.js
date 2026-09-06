@@ -7,8 +7,8 @@ import {
   onVisibilityChange,
   refreshSession,
   scheduleRefresh,
-  setClient,
 } from "../src/refresh.js";
+import { setClient } from "../src/client.js";
 import { applySession, isAuthenticated } from "../src/store.js";
 
 function sessionExpiringIn(seconds) {

@@ -1,7 +1,8 @@
 import axios from "axios";
 import { installOn, redirectToLoginOnce } from "./interceptor.js";
 import { markReady, ready } from "./ready.js";
-import { bindVisibility, scheduleRefresh, setClient } from "./refresh.js";
+import { setClient } from "./client.js";
+import { bindVisibility, scheduleRefresh } from "./refresh.js";
 import { fetchSession } from "./session.js";
 import { applySession, clearSession, isAuthenticated } from "./store.js";
 import { useAuth } from "./useAuth.js";

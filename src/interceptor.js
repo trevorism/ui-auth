@@ -1,6 +1,7 @@
 import axios from "axios";
 import { login } from "./redirect.js";
-import { refreshSession, setClient } from "./refresh.js";
+import { setClient } from "./client.js";
+import { refreshSession } from "./refresh.js";
 import { isAuthenticated } from "./store.js";
 
 const INSTALLED = Symbol.for("trevorism.ui-auth.interceptor");
