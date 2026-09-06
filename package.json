@@ -1,6 +1,6 @@
 {
   "name": "@trevorism/ui-auth",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Browser session handling for Trevorism.com apps",
   "type": "module",
   "scripts": {
