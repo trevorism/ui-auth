@@ -3,8 +3,14 @@ import { abandonRefreshes } from "./refresh.js";
 import { LOGIN_URL, postLogout } from "./session.js";
 import { clearSession } from "./store.js";
 
+let loginPath = LOGIN_URL;
+
+export function setLoginPath(path) {
+  loginPath = path || LOGIN_URL;
+}
+
 export function login(next = navigation.currentPath()) {
-  navigation.assign(`${LOGIN_URL}?next=${encodeURIComponent(next)}`);
+  navigation.assign(`${loginPath}?next=${encodeURIComponent(next)}`);
 }
 
 export async function logout() {

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { installOn, redirectToLoginOnce } from "./interceptor.js";
 import { markReady, ready } from "./ready.js";
+import { setLoginPath } from "./redirect.js";
 import { setClient } from "./client.js";
 import { bindVisibility, scheduleRefresh } from "./refresh.js";
 import { fetchSession } from "./session.js";
@@ -15,6 +16,7 @@ export const TrevorismAuth = {
   install(app, options = {}) {
     const client = options.axios ?? axios;
     installedClient = client;
+    setLoginPath(options.loginPath);
     installOn(client);
     setClient(client);
     bindVisibility();
