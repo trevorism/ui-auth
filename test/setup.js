@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import { navigation } from "../src/navigation.js";
 import { resetLoginRedirect } from "../src/interceptor.js";
 import { abandonRefreshes } from "../src/refresh.js";
+import { setLoginPath } from "../src/redirect.js";
 import { resetSession } from "../src/store.js";
 import { resetBootstrapForTests } from "../src/plugin.js";
 
@@ -14,6 +15,7 @@ beforeEach(() => {
   abandonRefreshes();
   resetLoginRedirect();
   resetBootstrapForTests();
+  setLoginPath(null);
   navigation.assign.mockClear();
   navigation.currentPath.mockClear();
 });

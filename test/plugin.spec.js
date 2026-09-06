@@ -6,7 +6,7 @@ import { TrevorismAuth, bootstrap, createAuthGuard, ensureBootstrapped } from ".
 import { setClient } from "../src/client.js";
 import { clearScheduledRefresh } from "../src/refresh.js";
 import { applySession, isAuthenticated } from "../src/store.js";
-import { login, logout } from "../src/redirect.js";
+import { login, logout, setLoginPath } from "../src/redirect.js";
 import { useAuth } from "../src/useAuth.js";
 
 const SESSION_BODY = {
@@ -149,6 +149,32 @@ describe("login and logout", () => {
     login();
 
     expect(navigation.assign).toHaveBeenCalledWith("/api/auth/login?next=%2Fhere");
+  });
+
+  it("sends the visitor to a login page of the app's choosing", () => {
+    setLoginPath("/login");
+
+    login("/notes/1");
+
+    expect(navigation.assign).toHaveBeenCalledWith("/login?next=%2Fnotes%2F1");
+  });
+
+  it("falls back to the handoff route when no login page is configured", () => {
+    setLoginPath(null);
+
+    login("/notes/1");
+
+    expect(navigation.assign).toHaveBeenCalledWith("/api/auth/login?next=%2Fnotes%2F1");
+  });
+
+  it("takes the login page from the plugin options", () => {
+    const app = { config: { globalProperties: {} } };
+    mock.onGet("/api/auth/session").reply(200, { authenticated: false });
+
+    TrevorismAuth.install(app, { loginPath: "/signin" });
+    login("/notes/2");
+
+    expect(navigation.assign).toHaveBeenCalledWith("/signin?next=%2Fnotes%2F2");
   });
 
   it("encodes an explicit next", () => {

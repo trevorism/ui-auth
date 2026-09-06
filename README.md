@@ -37,6 +37,13 @@ const { user, isAuthenticated, isAdmin, loading, login, logout } = useAuth();
 Passing `router` is optional. When present, any route with `meta.requiresAuth` sends a signed out
 visitor to login and returns them to that route afterwards.
 
+An app that keeps its own login page rather than using the handoff passes `loginPath`, and every
+redirect to login goes there instead:
+
+```javascript
+app.use(TrevorismAuth, { router, loginPath: "/login" });
+```
+
 ```javascript
 { path: "/report", component: Report, meta: { requiresAuth: true } }
 ```
@@ -59,7 +66,8 @@ visitor to login and returns them to that route afterwards.
 | `useAuth()` | `{ user, isAuthenticated, isAdmin, loading, ready, login, logout, refresh }` |
 | `installOn(instance)` | Install the interceptor on an axios instance of your own, and route the library's own calls through it |
 | `setClient(instance)` | Point the library's session, refresh and logout calls at an axios instance |
-| `login(next)` | Navigate to `/api/auth/login`, defaulting `next` to the current path |
+| `login(next)` | Navigate to the login page, defaulting `next` to the current path |
+| `setLoginPath(path)` | Point `login()` somewhere other than `/api/auth/login` |
 | `logout()` | Clear the session, then follow the logout URL the backend returns |
 
 `user`, `isAuthenticated`, `isAdmin` and `loading` are computed refs. `ready` is a promise, so
