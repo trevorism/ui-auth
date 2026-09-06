@@ -57,7 +57,8 @@ visitor to login and returns them to that route afterwards.
 |---|---|
 | `TrevorismAuth` | The Vue plugin. `app.use(TrevorismAuth, { router, axios })` |
 | `useAuth()` | `{ user, isAuthenticated, isAdmin, loading, ready, login, logout, refresh }` |
-| `installOn(instance)` | Install the interceptor on an axios instance of your own |
+| `installOn(instance)` | Install the interceptor on an axios instance of your own, and route the library's own calls through it |
+| `setClient(instance)` | Point the library's session, refresh and logout calls at an axios instance |
 | `login(next)` | Navigate to `/api/auth/login`, defaulting `next` to the current path |
 | `logout()` | Clear the session, then follow the logout URL the backend returns |
 

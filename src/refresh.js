@@ -1,24 +1,18 @@
-import axios from "axios";
 import { postRefresh } from "./session.js";
 import { applySession, clearSession, expiresAt } from "./store.js";
 
 export const REFRESH_LEAD_MILLIS = 60 * 1000;
 export const MINIMUM_DELAY_MILLIS = 5 * 1000;
 
-let client = axios;
 let inFlight = null;
 let timerId = null;
 let visibilityBound = false;
 let epoch = 0;
 
-export function setClient(instance) {
-  client = instance ?? axios;
-}
-
 export function refreshSession() {
   if (!inFlight) {
     const startedAt = epoch;
-    inFlight = postRefresh(client)
+    inFlight = postRefresh()
       .then((body) => {
         if (startedAt === epoch) {
           applySession(body);
